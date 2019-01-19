@@ -1,0 +1,64 @@
+﻿
+@{
+    ViewBag.Title = "Chat";
+}
+
+<h2>Chat</h2>
+
+<!-- -----PARTE 2 (Opcional): HTML PARA CONTAR LOS CLIENTES CONECTADOS----- -->
+<div>
+    Hay: <span id="cantidad"></span> usuarios activos
+</div>
+<!-- -----FIN PARTE 2----- -->
+<div class="container">
+    <input type="text" id="mensaje" />
+    <input type="button" id="enviarmensaje" value="Enviar" />
+    <input type="hidden" id="mostrarnombre" />
+    <ul id="debate"></ul>
+</div>
+@section scripts {
+    <!--Referencias a Scripts. -->
+    <!--La biblioteca jQuery es requerida y es referenciada por defecto en _Layout.cshtml. -->
+    <!--Referencia a la biblioteca SignalR. -->
+    <script src="~/Scripts/jquery.signalR-2.4.0.min.js"></script>
+    <!--Referencia al script hub SignalR autogenerado. -->
+    <script src="~/signalr/hubs"></script>
+    <!--Script SignalR para actualizar la pagina del chat y enviar mensajes.
+        Además para contar los clientes conectados.-->
+    <script>
+        $(function () {
+            //Referencia al proxy autogenerado para el hub (concentrador).
+            var chat = $.connection.chatHub;
+            //-----PARTE 2 (Opcional): JQUERY PARA CONTAR LOS CLIENTES CONECTADOS-----/
+            //Crear una función que el hub (concentrador) puede devolver la llamada para mostrar mensajes.
+            chat.client.mostrarConectados = function (contador) {
+                $("#cantidad").html(contador);
+            }
+            //-----FIN PARTE 2-----/
+            //Crear una función que el hub (concentrador) puede devolver la llamada para mostrar mensajes.
+            chat.client.addNuevoMensajeEnPagina = function (nombre, mensaje) {
+                //Añadir el mensaje a la pagina.
+                $('#debate').append('<li><strong>' + codificarHtml(nombre)
+                    + '</strong>: ' + codificarHtml(mensaje) + '</li>');
+            };
+            //Obtener el nombre de usuario y almacenarlo para anteponer a los mensajes.
+            $('#mostrarnombre').val(prompt('Introduce tu nombre:', ''));
+            //Establecer el foco inicial a la caja de texto del mensaje.
+            $('#mensaje').focus();
+            //Iniciar la conexión.
+            $.connection.hub.start().done(function () {
+                $('#enviarmensaje').click(function () {
+                    //Llamar al metodo Enviar en el hub (concentrador).
+                    chat.server.enviar($('#mostrarnombre').val(), $('#mensaje').val());
+                    //Limpiar la caja de texto y reestablecer el foco para el próximo comentario.
+                    $('#mensaje').val('').focus();
+                });
+            });
+        });
+        //Esta función opcional codifica los mensajes a HTML para mostrarlos en la pagina.
+        function codificarHtml(valor) {
+            var valorCodificado = $('<div />').text(valor).html();
+            return valorCodificado;
+        }
+    </script>
+}
